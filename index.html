@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>奇偶数概率游戏</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // 禁用F12、Ctrl+Shift+I、Ctrl+Shift+J、Ctrl+U
+        document.addEventListener('keydown', function(e) {
+            if (
+                e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j')) ||
+                (e.ctrlKey && (e.key === 'U' || e.key === 'u'))
+            ) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // 禁用开发者工具
+        function disableDevTools() {
+            // 检测开发者工具是否打开
+            const devtools = /./;
+            devtools.toString = function() {
+                this.opened = true;
+                return '';
+            }
+            
+            setInterval(function() {
+                console.log('%c', devtools);
+                if (devtools.opened) {
+                    devtools.opened = false;
+                    window.location.reload();
+                }
+            }, 1000);
+        }
+
+        // 禁用复制
+        document.addEventListener('copy', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // 禁用选择
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // 禁用拖拽
+        document.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // 禁用控制台输出
+        console.log = function() {};
+        console.warn = function() {};
+        console.error = function() {};
+        console.info = function() {};
+    </script>
+    <style>
+        /* 禁用文本选择 */
+        * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* 允许输入框选择文本 */
+        input[type="number"] {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+        
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --accent-color: #f72585;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --even-color: #4cc9f0;
+            --odd-color: #f72585;
+            --success-color: #38b000;
+            --warning-color: #ff9e00;
+            --info-color: #4895ef;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-color);
+            background-color: #f0f2f5;
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 25px;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: var(--secondary-color);
+            font-weight: 700;
+            font-size: 2.2rem;
+        }
+        
+        .game-description {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary-color);
+        }
+        
+        .game-description h3 {
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+        
+        .ball-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 25px 0;
+            justify-content: center;
+            min-height: 70px;
+        }
+        
+        .ball {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .ball:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .odd {
+            background-color: var(--odd-color);
+        }
+        
+        .even {
+            background-color: var(--even-color);
+        }
+        
+        .controls {
+            margin: 25px 0;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .input-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .input-group label {
+            min-width: 120px;
+            font-weight: 500;
+        }
+        
+        input[type="number"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            flex: 1;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="number"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 15px 0;
+        }
+        
+        .speed-control label {
+            min-width: 120px;
+            font-weight: 500;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 5px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+        
+        #speedValue {
+            background-color: var(--primary-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-width: 140px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-info {
+            background-color: var(--info-color);
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .auto-play.active {
+            background-color: #dc3545;
+        }
+        
+        .stats {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .stats h3 {
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 8px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .stat-card h4 {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card p {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .game-result {
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            margin-top: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .probability-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .probability-table th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        .probability-table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            background-color: white;
+        }
+        
+        .probability-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .chart-container {
+            margin-top: 30px;
+            height: 350px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .draw-animation {
+            height: 80px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+        
+        .ball-selection {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .ball-animation {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin: 0 15px;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+            animation: ballEnter 0.8s ease forwards;
+            opacity: 0;
+            transform: scale(0.5) translateY(20px);
+        }
+        
+        .plus-sign, .equals-sign {
+            font-size: 2rem;
+            margin: 0 15px;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 15px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+        }
+        
+        @keyframes ballEnter {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.5) translateY(20px); 
+            }
+            70% { 
+                transform: scale(1.1) translateY(-5px); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1) translateY(0); 
+            }
+        }
+        
+        .result-text {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+        
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .container {
+                margin: 15px;
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .input-group, .speed-control {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .input-group label, .speed-control label {
+                margin-bottom: 5px;
+            }
+            
+            button {
+                width: 100%;
+            }
+            
+            .stat-card p {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+<script src="https://lib.youware.com/youware-lib.1747145198.js" id="yourware-lib"></script></head>
+<body>
+    <div class="container">
+        <h1>奇偶数概率游戏</h1>
+        
+        <div class="game-description">
+            <h3>游戏规则</h3>
+            <p>这是一个关于概率的游戏。设置奇数球和偶数球的数量，然后随机抽取两个球。两球相加为偶数则获胜。通过多次游戏，观察实际概率与理论概率的对比。</p>
+        </div>
+        
+        <div class="controls">
+            <div class="input-row">
+                <div class="input-group">
+                    <label>偶数球数量：</label>
+                    <input type="number" id="evenCount" min="0" value="0">
+                </div>
+                <div class="input-group">
+                    <label>奇数球数量：</label>
+                    <input type="number" id="oddCount" min="0" value="0">
+                </div>
+            </div>
+            
+            <div class="speed-control">
+                <label>游戏速度：</label>
+                <input type="range" id="gameSpeed" min="1" max="10" value="5">
+                <div id="speedValue">5</div>
+            </div>
+            
+            <div class="btn-group">
+                <button onclick="generateBalls()" class="btn-success">生成球</button>
+                <button onclick="playGame()" class="btn-primary">开始游戏</button>
+                <button id="autoPlayBtn" onclick="toggleAutoPlay()" class="btn-info auto-play">自动进行100次</button>
+                <button onclick="resetGame()" class="btn-warning">重置</button>
+            </div>
+        </div>
+        
+        <div class="ball-container" id="ballContainer"></div>
+        
+        <div class="draw-animation" id="drawAnimation" style="display: none;">
+            <div class="ball-selection">
+                <span id="animBall1" class="ball-animation"></span>
+                <span class="plus-sign">+</span>
+                <span id="animBall2" class="ball-animation"></span>
+                <span class="equals-sign">=</span>
+                <span id="animResult" class="result-number"></span>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <h3>统计信息</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>奇数球数量</h4>
+                    <p id="currentOddCount">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>偶数球数量</h4>
+                    <p id="currentEvenCount">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>总游戏次数</h4>
+                    <p id="totalGames">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>获胜概率</h4>
+                    <p id="winProbability">0%</p>
+                </div>
+            </div>
+            
+            <div class="game-result" id="gameResultDisplay" style="display: none;">
+                <div class="result-text" id="gameResult"></div>
+            </div>
+            
+            <div id="probabilityComparison" style="display: none;">
+                <h4 style="margin-top: 20px; color: var(--secondary-color);">概率对比</h4>
+                <table class="probability-table">
+                    <thead>
+                        <tr>
+                            <th>组合类型</th>
+                            <th>理论概率</th>
+                            <th>实际概率</th>
+                            <th>差异</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>两个偶数球</td>
+                            <td id="theoreticalEvenEven">0%</td>
+                            <td id="actualEvenEven">0%</td>
+                            <td id="diffEvenEven">0%</td>
+                        </tr>
+                        <tr>
+                            <td>一奇一偶</td>
+                            <td id="theoreticalEvenOdd">0%</td>
+                            <td id="actualEvenOdd">0%</td>
+                            <td id="diffEvenOdd">0%</td>
+                        </tr>
+                        <tr>
+                            <td>两个奇数球</td>
+                            <td id="theoreticalOddOdd">0%</td>
+                            <td id="actualOddOdd">0%</td>
+                            <td id="diffOddOdd">0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="probabilityChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let balls = [];
+        let gameResults = {
+            even: 0,
+            odd: 0,
+            total: 0,
+            evenEven: 0,
+            oddOdd: 0,
+            evenOdd: 0
+        };
+        let probabilityHistory = [];
+        let gameCount = 0;
+        let chart;
+        let autoPlayInterval = null;
+        let autoPlayCount = 0;
+        const TOTAL_AUTO_PLAYS = 100;
+
+        // 初始化图表
+        function initChart() {
+            const ctx = document.getElementById('probabilityChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '获胜概率',
+                        data: [],
+                        borderColor: '#4361ee',
+                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#4361ee',
+                        pointBorderColor: '#fff',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '概率 (%)',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '游戏次数',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 10,
+                                callback: function(value) {
+                                    return value;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '获胜概率变化趋势',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                bottom: 15
+                            }
+                        },
+                        legend: {
+                            labels: {
+                                boxWidth: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            padding: 10,
+                            cornerRadius: 6,
+                            displayColors: false,
+                            callbacks: {
+                                title: function(tooltipItem) {
+                                    return `第 ${tooltipItem[0].label} 次游戏`;
+                                },
+                                label: function(context) {
+                                    return `获胜概率: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        function updateChart(probability) {
+            gameCount++;
+            probabilityHistory.push(probability);
+            
+            // 更新图表数据
+            chart.data.labels.push(gameCount);
+            chart.data.datasets[0].data.push(probability);
+            
+            // 移除数据点限制，显示所有数据
+            chart.update();
+        }
+
+        function generateBalls() {
+            const evenCount = parseInt(document.getElementById('evenCount').value) || 0;
+            const oddCount = parseInt(document.getElementById('oddCount').value) || 0;
+            
+            if (evenCount < 0 || oddCount < 0) {
+                alert('请输入非负数！');
+                return;
+            }
+
+            if (evenCount + oddCount < 2) {
+                alert('球的总数至少需要2个！');
+                return;
+            }
+
+            balls = [];
+            
+            // 生成偶数球
+            for (let i = 0; i < evenCount; i++) {
+                balls.push(2 * (i + 1));
+            }
+            
+            // 生成奇数球
+            for (let i = 0; i < oddCount; i++) {
+                balls.push(2 * i + 1);
+            }
+            
+            // 隐藏概率对比表格
+            document.getElementById('probabilityComparison').style.display = 'none';
+            
+            updateBallDisplay();
+        }
+
+        function updateBallDisplay() {
+            const container = document.getElementById('ballContainer');
+            container.innerHTML = '';
+            
+            balls.forEach((number, index) => {
+                const ball = document.createElement('div');
+                ball.className = `ball ${number % 2 === 0 ? 'even' : 'odd'}`;
+                ball.textContent = number;
+                container.appendChild(ball);
+            });
+
+            updateStats();
+        }
+
+        function updateSpeedValue() {
+            const speed = document.getElementById('gameSpeed').value;
+            document.getElementById('speedValue').textContent = speed;
+        }
+
+        function getGameSpeed() {
+            const speed = parseInt(document.getElementById('gameSpeed').value);
+            return 1000 / speed; // 将速度值转换为毫秒间隔
+        }
+
+        function toggleAutoPlay() {
+            const button = document.getElementById('autoPlayBtn');
+            
+            if (autoPlayInterval) {
+                // 停止自动游戏
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = null;
+                button.textContent = '自动进行100次';
+                button.classList.remove('active');
+                // 显示概率对比
+                showProbabilityComparison();
+                // 更新图表显示所有数据点
+                updateChartWithAllData();
+                return;
+            }
+
+            if (balls.length < 2) {
+                alert('请先生成球！');
+                return;
+            }
+
+            // 开始自动游戏
+            button.textContent = '停止自动游戏';
+            button.classList.add('active');
+            autoPlayCount = 0;
+
+            autoPlayInterval = setInterval(() => {
+                if (autoPlayCount >= TOTAL_AUTO_PLAYS) {
+                    clearInterval(autoPlayInterval);
+                    autoPlayInterval = null;
+                    button.textContent = '自动进行100次';
+                    button.classList.remove('active');
+                    // 显示概率对比
+                    showProbabilityComparison();
+                    // 更新图表显示所有数据点
+                    updateChartWithAllData();
+                    return;
+                }
+
+                playGame();
+                autoPlayCount++;
+            }, getGameSpeed());
+        }
+
+        function playGame() {
+            if (balls.length < 2) {
+                alert('至少需要两个球才能开始游戏！');
+                return;
+            }
+
+            // 使用Fisher-Yates洗牌算法进行随机抽取
+            const shuffled = [...balls];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            
+            const selected = shuffled.slice(0, 2);
+            const sum = selected[0] + selected[1];
+            
+            gameResults.total++;
+            
+            const isFirstEven = selected[0] % 2 === 0;
+            const isSecondEven = selected[1] % 2 === 0;
+
+            if (isFirstEven && isSecondEven) {
+                gameResults.evenEven++;
+            } else if (!isFirstEven && !isSecondEven) {
+                gameResults.oddOdd++;
+            } else {
+                gameResults.evenOdd++;
+            }
+
+            if (sum % 2 === 0) {
+                gameResults.even++;
+            } else {
+                gameResults.odd++;
+            }
+
+            // 显示动画
+            showDrawAnimation(selected[0], selected[1], sum);
+            
+            updateStats();
+        }
+
+        function showDrawAnimation(ball1, ball2, sum) {
+            const drawAnimation = document.getElementById('drawAnimation');
+            const animBall1 = document.getElementById('animBall1');
+            const animBall2 = document.getElementById('animBall2');
+            const animResult = document.getElementById('animResult');
+            const gameResultDisplay = document.getElementById('gameResultDisplay');
+            
+            // 重置动画
+            animBall1.style.animation = 'none';
+            animBall2.style.animation = 'none';
+            
+            // 触发重排
+            void animBall1.offsetWidth;
+            void animBall2.offsetWidth;
+            
+            // 设置球的样式
+            animBall1.className = `ball-animation ${ball1 % 2 === 0 ? 'even' : 'odd'}`;
+            animBall1.textContent = ball1;
+            
+            animBall2.className = `ball-animation ${ball2 % 2 === 0 ? 'even' : 'odd'}`;
+            animBall2.textContent = ball2;
+            
+            // 设置结果
+            animResult.textContent = sum;
+            
+            // 显示动画区域
+            drawAnimation.style.display = 'flex';
+            
+            // 添加动画
+            animBall1.style.animation = 'ballEnter 0.8s ease forwards';
+            setTimeout(() => {
+                animBall2.style.animation = 'ballEnter 0.8s ease forwards';
+            }, 200);
+            
+            // 显示游戏结果
+            gameResultDisplay.style.display = 'block';
+            document.getElementById('gameResult').innerHTML = 
+                `选择了 <strong>${ball1}</strong> 和 <strong>${ball2}</strong>，和为 <strong>${sum}</strong>，结果是 <span style="color:${sum % 2 === 0 ? 'var(--success-color)' : 'var(--accent-color)'}; font-weight:bold">${sum % 2 === 0 ? '偶数 (获胜)' : '奇数 (失败)'}</span>`;
+        }
+
+        function updateStats() {
+            const oddCount = balls.filter(n => n % 2 !== 0).length;
+            const evenCount = balls.filter(n => n % 2 === 0).length;
+            
+            document.getElementById('currentOddCount').textContent = oddCount;
+            document.getElementById('currentEvenCount').textContent = evenCount;
+            document.getElementById('totalGames').textContent = gameResults.total;
+            
+            if (gameResults.total > 0) {
+                const winProbability = (gameResults.even / gameResults.total * 100).toFixed(1);
+                document.getElementById('winProbability').textContent = `${winProbability}%`;
+                
+                // 更新图表
+                updateChart(parseFloat(winProbability));
+
+                const evenEvenProbability = (gameResults.evenEven / gameResults.total * 100).toFixed(1);
+                const oddOddProbability = (gameResults.oddOdd / gameResults.total * 100).toFixed(1);
+                const evenOddProbability = (gameResults.evenOdd / gameResults.total * 100).toFixed(1);
+
+                // 更新实际概率
+                document.getElementById('actualEvenEven').textContent = `${evenEvenProbability}%`;
+                document.getElementById('actualOddOdd').textContent = `${oddOddProbability}%`;
+                document.getElementById('actualEvenOdd').textContent = `${evenOddProbability}%`;
+            }
+        }
+
+        // 添加理论概率计算函数
+        function calculateTheoreticalProbabilities() {
+            const oddCount = balls.filter(n => n % 2 !== 0).length;
+            const evenCount = balls.filter(n => n % 2 === 0).length;
+            const total = balls.length;
+
+            // 计算组合数
+            const totalCombinations = (total * (total - 1)) / 2;
+            const evenEvenCombinations = (evenCount * (evenCount - 1)) / 2;
+            const oddOddCombinations = (oddCount * (oddCount - 1)) / 2;
+            const evenOddCombinations = evenCount * oddCount;
+
+            // 计算理论概率
+            const evenEvenProb = (evenEvenCombinations / totalCombinations * 100).toFixed(1);
+            const oddOddProb = (oddOddCombinations / totalCombinations * 100).toFixed(1);
+            const evenOddProb = (evenOddCombinations / totalCombinations * 100).toFixed(1);
+
+            return {
+                evenEven: evenEvenProb,
+                oddOdd: oddOddProb,
+                evenOdd: evenOddProb
+            };
+        }
+
+        // 添加显示概率对比的函数
+        function showProbabilityComparison() {
+            if (gameResults.total === 0) return;
+            
+            const theoreticalProbs = calculateTheoreticalProbabilities();
+            const evenEvenProbability = (gameResults.evenEven / gameResults.total * 100).toFixed(1);
+            const oddOddProbability = (gameResults.oddOdd / gameResults.total * 100).toFixed(1);
+            const evenOddProbability = (gameResults.evenOdd / gameResults.total * 100).toFixed(1);
+            
+            // 更新理论概率
+            document.getElementById('theoreticalEvenEven').textContent = `${theoreticalProbs.evenEven}%`;
+            document.getElementById('theoreticalOddOdd').textContent = `${theoreticalProbs.oddOdd}%`;
+            document.getElementById('theoreticalEvenOdd').textContent = `${theoreticalProbs.evenOdd}%`;
+
+            // 更新实际概率
+            document.getElementById('actualEvenEven').textContent = `${evenEvenProbability}%`;
+            document.getElementById('actualOddOdd').textContent = `${oddOddProbability}%`;
+            document.getElementById('actualEvenOdd').textContent = `${evenOddProbability}%`;
+
+            // 计算并更新差异
+            const diffEvenEven = (evenEvenProbability - theoreticalProbs.evenEven).toFixed(1);
+            const diffOddOdd = (oddOddProbability - theoreticalProbs.oddOdd).toFixed(1);
+            const diffEvenOdd = (evenOddProbability - theoreticalProbs.evenOdd).toFixed(1);
+            
+            document.getElementById('diffEvenEven').textContent = `${diffEvenEven}%`;
+            document.getElementById('diffOddOdd').textContent = `${diffOddOdd}%`;
+            document.getElementById('diffEvenOdd').textContent = `${diffEvenOdd}%`;
+
+            // 为差异添加颜色
+            document.getElementById('diffEvenEven').style.color = diffEvenEven > 0 ? 'green' : (diffEvenEven < 0 ? 'red' : 'black');
+            document.getElementById('diffOddOdd').style.color = diffOddOdd > 0 ? 'green' : (diffOddOdd < 0 ? 'red' : 'black');
+            document.getElementById('diffEvenOdd').style.color = diffEvenOdd > 0 ? 'green' : (diffEvenOdd < 0 ? 'red' : 'black');
+
+            // 显示概率对比表格
+            document.getElementById('probabilityComparison').style.display = 'block';
+        }
+
+        function updateChartWithAllData() {
+            if (probabilityHistory.length === 0) return;
+            
+            // 更新图表配置
+            chart.options.scales.x.min = 1;
+            chart.options.scales.x.max = probabilityHistory.length;
+            
+            // 更新数据
+            chart.data.labels = Array.from({length: probabilityHistory.length}, (_, i) => i + 1);
+            chart.data.datasets[0].data = [...probabilityHistory];
+            
+            // 优化图表显示
+            chart.options.scales.x.ticks = {
+                maxTicksLimit: 10,
+                callback: function(value) {
+                    return value;
+                }
+            };
+            
+            chart.update();
+        }
+
+        function resetGame() {
+            if (autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = null;
+                document.getElementById('autoPlayBtn').textContent = '自动进行100次';
+                document.getElementById('autoPlayBtn').classList.remove('active');
+            }
+            
+            balls = [];
+            gameResults = { even: 0, odd: 0, total: 0, evenEven: 0, oddOdd: 0, evenOdd: 0 };
+            probabilityHistory = [];
+            gameCount = 0;
+            document.getElementById('evenCount').value = 0;
+            document.getElementById('oddCount').value = 0;
+            document.getElementById('gameResultDisplay').style.display = 'none';
+            document.getElementById('drawAnimation').style.display = 'none';
+            document.getElementById('probabilityComparison').style.display = 'none';
+            document.getElementById('totalGames').textContent = '0';
+            chart.data.labels = [];
+            chart.data.datasets[0].data = [];
+            chart.update();
+            updateBallDisplay();
+        }
+
+        // 初始化
+        window.onload = function() {
+            initChart();
+            document.getElementById('gameSpeed').addEventListener('input', updateSpeedValue);
+        };
+    </script>
+</body>
+</html>
