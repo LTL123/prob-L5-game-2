@@ -767,6 +767,9 @@
             if (evenCount + oddCount < 2) {
                 alert('球的总数至少需要2个！');
                 return;
+            if (evenCount + oddCount > 5000) {
+                alert('球的总数不能大于5000！');
+                return;
             }
 
             balls = [];
